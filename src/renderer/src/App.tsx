@@ -311,23 +311,30 @@ export default function App() {
     soundsListRef.current = sounds
   }, [sounds])
 
-  // Register Hotkeys
+  // Stable refs for actions to avoid hotkey re-subscriptions
+  const playRef = useRef(handlePlay)
+  const stopRef = useRef(stopSound)
+  useEffect(() => { playRef.current = handlePlay }, [handlePlay])
+  useEffect(() => { stopRef.current = stopSound }, [stopSound])
+
+  // Register Hotkeys (Stable Callback)
   useHotkeys(useCallback((combo) => {
     console.log(`[RENDERER] Global Hotkey Received: ${combo}`)
     const sound = soundsListRef.current.find(s => s.shortcut === combo)
+    
     if (sound) {
       console.log(`[RENDERER] Triggering Sound Toggle: ${sound.name}`)
-      // Toggle logic for hotkeys
+      // Toggle logic using stable refs to state and functions
       if (activeSoundIdRef.current === sound.id && isPlayingRef.current) {
-        stopSound()
+        stopRef.current()
         setActiveSoundId(null)
       } else {
-        handlePlay(sound)
+        playRef.current(sound)
         setFlashingSoundId(sound.id)
         setTimeout(() => setFlashingSoundId(null), 300)
       }
     }
-  }, [handlePlay, stopSound]))
+  }, [])) // Empty dependencies = stable listener
 
   const [contextMenu, setContextMenu] = useState<{ x: number, y: number, soundId: string } | null>(null)
   const [editingSoundId, setEditingSoundId] = useState<string | null>(null)
@@ -458,28 +465,44 @@ export default function App() {
           if (e.shiftKey) modifiers.push('SHIFT')
           if (e.metaKey) modifiers.push('META')
 
-          const key = e.key.toUpperCase()
-          // Filter out standalone modifiers and common layout-changing keys
-          const isModifier = ['CONTROL', 'ALT', 'SHIFT', 'META', 'ALTGRAPH', 'CAPSLOCK'].includes(key)
-          
-          if (!isModifier) {
-            // Handle some naming discrepancies between KeyboardEvent and node-global-key-listener
-            let mappedKey = key
-            if (key === 'ESCAPE') mappedKey = 'ESC'
-            if (key === ' ') mappedKey = 'SPACE'
-            if (key === 'ENTER') mappedKey = 'ENTER'
-            if (key === 'ARROWUP') mappedKey = 'UP'
-            if (key === 'ARROWDOWN') mappedKey = 'DOWN'
-            if (key === 'ARROWLEFT') mappedKey = 'LEFT'
-            if (key === 'ARROWRIGHT') mappedKey = 'RIGHT'
-            if (key === 'DELETE') mappedKey = 'DEL'
-            if (key === 'INSERT') mappedKey = 'INS'
+          // Use e.code (physical key) — layout-independent
+          // This ensures RU/EN keyboard layout doesn't affect hotkey matching
+          const code = e.code
+          const MODIFIER_CODES = ['ControlLeft','ControlRight','AltLeft','AltRight','ShiftLeft','ShiftRight','MetaLeft','MetaRight','CapsLock','AltGraph']
+          if (MODIFIER_CODES.includes(code)) {
+            setEditValue(modifiers.join('+'))
+            return
+          }
 
+          // Map e.code → same string uiohook sends
+          let mappedKey = ''
+          if (code.startsWith('Key')) {
+            mappedKey = code.slice(3) // KeyA → A, KeyZ → Z
+          } else if (code.startsWith('Digit')) {
+            mappedKey = code.slice(5) // Digit1 → 1
+          } else if (code.startsWith('Numpad')) {
+            const rest = code.slice(6)
+            const numpadMap: Record<string, string> = {
+              Enter: 'NUM_ENTER', Decimal: 'NUM_DECIMAL', Divide: 'NUM_DIVIDE',
+              Multiply: 'NUM_MULTIPLY', Subtract: 'NUM_SUBTRACT', Add: 'NUM_ADD'
+            }
+            mappedKey = numpadMap[rest] ?? ('NUM' + rest) // Numpad0 → NUM0
+          } else if (/^F\d+$/.test(code)) {
+            mappedKey = code // F1, F5, F12
+          } else {
+            const specialMap: Record<string, string> = {
+              Escape: 'ESC', Enter: 'ENTER', Space: 'SPACE',
+              Backspace: 'BACKSPACE', Tab: 'TAB',
+              ArrowUp: 'UP', ArrowDown: 'DOWN', ArrowLeft: 'LEFT', ArrowRight: 'RIGHT',
+              Delete: 'DEL', Insert: 'INS',
+            }
+            mappedKey = specialMap[code] ?? code.toUpperCase()
+          }
+
+          if (mappedKey) {
             const combo = [...modifiers, mappedKey].join('+')
             setEditValue(combo)
             setIsRecording(false)
-          } else {
-            setEditValue(modifiers.join('+'))
           }
         }
 

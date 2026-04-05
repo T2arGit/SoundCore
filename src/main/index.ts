@@ -1,5 +1,5 @@
 import { uIOhook } from 'uiohook-napi'
-import { app, shell, BrowserWindow, ipcMain, dialog } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, dialog, protocol, net } from 'electron'
 import { join, dirname } from 'path'
 import { existsSync, readFileSync, writeFileSync, copyFileSync, mkdirSync } from 'fs'
 import { execFile } from 'child_process'
@@ -44,7 +44,29 @@ function createWindow(): void {
 app.commandLine.appendSwitch('disable-renderer-backgrounding')
 app.commandLine.appendSwitch('disable-background-timer-throttling')
 
+// Register protocol for local file access (before app ready)
+protocol.registerSchemesAsPrivileged([
+  { scheme: 'local-file', privileges: { standard: true, secure: true, supportFetchAPI: true, bypassCSP: true } }
+])
+
 app.whenReady().then(() => {
+  // Handle local-file:// requests
+  protocol.handle('local-file', (request) => {
+    const url = request.url.replace('local-file://', '')
+    try {
+      // Decode if it's encoded, then normalize slashes for Windows compatibility
+      const decodedPath = decodeURIComponent(url).replace(/\\/g, '/')
+      console.log(`[PROTOCOL] Fetching: ${decodedPath}`)
+      
+      // Ensure it starts with a slash if it's a drive letter (e.g. /C:/...)
+      const optimizedPath = decodedPath.startsWith('/') ? decodedPath : `/${decodedPath}`
+      return net.fetch(`file://${optimizedPath}`)
+    } catch (e) {
+      console.error(`[PROTOCOL] Error processing path: ${url}`, e)
+      return net.fetch(`file:///${url}`)
+    }
+  })
+
   electronApp.setAppUserModelId('com.antigravity.soundcore')
 
   app.on('browser-window-created', (_, window) => {
@@ -67,9 +89,14 @@ app.whenReady().then(() => {
       83: 'NUM_DECIMAL', 3639: 'NUM_DIVIDE', 55: 'NUM_MULTIPLY', 74: 'NUM_SUBTRACT', 78: 'NUM_ADD', 3612: 'NUM_ENTER'
     }
 
-    console.log(`[MAIN] Initializing uiohook-napi Listener`)
+    console.log(`[HOTKEY] Initializing uiohook-napi...`)
     
+    let listenerActive = false
     uIOhook.on('keydown', (e) => {
+      if (!listenerActive) {
+        console.log(`[HOTKEY] First keydown received, keycode: ${e.keycode}`)
+        listenerActive = true
+      }
       const keyName = UIOHOOK_MAP[e.keycode]
       if (!keyName) return
 
@@ -84,7 +111,7 @@ app.whenReady().then(() => {
       if (e.metaKey) modifiers.push('META')
 
       const combo = [...modifiers, keyName].join('+')
-      console.log(`[MAIN] uIOhook Triggered: ${combo}`)
+      console.log(`[HOTKEY] Combo fired: ${combo} (keycode: ${e.keycode})`)
       
       if (mainWindow && !mainWindow.isDestroyed()) {
         mainWindow.webContents.send('global-hotkey', combo)
@@ -92,8 +119,10 @@ app.whenReady().then(() => {
     })
 
     uIOhook.start()
+    console.log(`[HOTKEY] uiohook started OK`)
   } catch (error) {
-    console.error('Failed to initialize uiohook-napi:', error)
+    console.error('[HOTKEY] FAILED TO INITIALIZE uiohook-napi:', error)
+    console.error('[HOTKEY] Hotkeys will NOT work. Check if uiohook-napi native module is present.')
   }
 
   app.on('activate', function () {
