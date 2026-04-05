@@ -1,29 +1,26 @@
-# ─── Stage 1: Build Frontend ───
+# ─── Stage 1: Build ───
 FROM node:22-slim AS build
-
 WORKDIR /app
-
-# Устанавливаем зависимости для сборки (если потребуются native модули, но для фронта обычно не нужны)
-# RUN apt-get update && apt-get install -y python3 make g++
-
 COPY package.json package-lock.json* ./
-
-# Устанавливаем только необходимые зависимости для фронтенда
 RUN npm install --legacy-peer-deps
-
 COPY . .
-
-# Собираем только фронтенд часть для веба
-# Используем vite напрямую, чтобы не дергать electron-builder
 RUN npx vite build src/renderer --outDir out/renderer
 
-# ─── Stage 2: Serve with Nginx ───
+# ─── Stage 2: Serve ───
 FROM nginx:stable-alpine
 
-# Копируем билд фронтенда. Vite при сборке из src/renderer кладет файлы в src/renderer/dist или указанный outDir
+# Создаем конфиг Nginx прямо здесь, чтобы не плодить файлы
+RUN echo 'server { \
+    listen 80; \
+    location / { \
+        root /usr/share/nginx/html; \
+        index index.html index.htm; \
+        try_files $uri $uri/ /index.html; \
+    } \
+}' > /etc/nginx/conf.d/default.conf
+
+# Копируем файлы (Vite кладет их в src/renderer/out/renderer)
 COPY --from=build /app/src/renderer/out/renderer /usr/share/nginx/html
 
-# Пробрасываем порт
 EXPOSE 80
-
 CMD ["nginx", "-g", "daemon off;"]
