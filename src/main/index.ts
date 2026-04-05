@@ -1,5 +1,5 @@
 import { uIOhook } from 'uiohook-napi'
-import { app, shell, BrowserWindow, ipcMain, dialog, protocol, net } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, dialog } from 'electron'
 import { join, dirname } from 'path'
 import { existsSync, readFileSync, writeFileSync, copyFileSync, mkdirSync } from 'fs'
 import { execFile } from 'child_process'
@@ -44,29 +44,7 @@ function createWindow(): void {
 app.commandLine.appendSwitch('disable-renderer-backgrounding')
 app.commandLine.appendSwitch('disable-background-timer-throttling')
 
-// Register protocol for local file access (before app ready)
-protocol.registerSchemesAsPrivileged([
-  { scheme: 'local-file', privileges: { standard: true, secure: true, supportFetchAPI: true, bypassCSP: true } }
-])
-
 app.whenReady().then(() => {
-  // Handle local-file:// requests
-  protocol.handle('local-file', (request) => {
-    const url = request.url.replace('local-file://', '')
-    try {
-      // Decode if it's encoded, then normalize slashes for Windows compatibility
-      const decodedPath = decodeURIComponent(url).replace(/\\/g, '/')
-      console.log(`[PROTOCOL] Fetching: ${decodedPath}`)
-      
-      // Ensure it starts with a slash if it's a drive letter (e.g. /C:/...)
-      const optimizedPath = decodedPath.startsWith('/') ? decodedPath : `/${decodedPath}`
-      return net.fetch(`file://${optimizedPath}`)
-    } catch (e) {
-      console.error(`[PROTOCOL] Error processing path: ${url}`, e)
-      return net.fetch(`file:///${url}`)
-    }
-  })
-
   electronApp.setAppUserModelId('com.antigravity.soundcore')
 
   app.on('browser-window-created', (_, window) => {

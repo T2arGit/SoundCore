@@ -187,18 +187,13 @@ export const useAudioEngine = () => {
     
     if (!audioContextRef.current || !monitorGainRef.current || !injectionDestRef.current) return
 
-    // Convert local path to our custom protocol
-    // encodeURI handles spaces while keeping : and / intact
-    const encodedPath = encodeURI(audioUrl.replace(/\\/g, '/'))
-    const protocolUrl = encodedPath.startsWith('local-file://') ? encodedPath : `local-file://${encodedPath}`
-
     // Resume context if suspended (browser autoplay policy)
     if (audioContextRef.current.state === 'suspended') {
       await audioContextRef.current.resume()
     }
 
     // Path 1: Monitor Output (Your Headset) - respect device selection
-    const monitorAudio = new Audio(protocolUrl)
+    const monitorAudio = new Audio(audioUrl)
     monitorAudio.volume = volume
     activeAudiosRef.current.push(monitorAudio)
     if ('setSinkId' in monitorAudio && playbackDevice && playbackDevice !== 'default') {
@@ -206,7 +201,7 @@ export const useAudioEngine = () => {
     }
 
     // Source for AudioContext-based paths (Injection + Visualizer)
-    const soundAudio = new Audio(protocolUrl)
+    const soundAudio = new Audio(audioUrl)
     soundAudio.crossOrigin = "anonymous"
     activeAudiosRef.current.push(soundAudio)
     const soundSource = audioContextRef.current.createMediaElementSource(soundAudio)
