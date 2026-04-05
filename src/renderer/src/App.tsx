@@ -589,8 +589,55 @@ export default function App() {
     )
   }
 
+  // ──────────────────────────────────────────────────────────────────────────
+  // Web Landing Page (Shown when NOT in Electron)
+  // ──────────────────────────────────────────────────────────────────────────
+  if (!(window as any).api) {
+    return (
+      <div className="min-h-screen bg-[#0a0a0c] text-white flex flex-col items-center justify-center p-8 font-sans selection:bg-purple-500/30">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_-20%,#3b1b6e_0%,transparent_50%)] opacity-40 pointer-events-none" />
+        
+        <div className="relative z-10 text-center animate-in fade-in zoom-in duration-700">
+          <div className="inline-block px-4 py-1.5 mb-6 rounded-full bg-white/5 border border-white/10 text-sm font-medium text-purple-400">
+            Internal Version Alpha
+          </div>
+          
+          <h1 className="text-7xl font-black mb-4 tracking-tighter bg-gradient-to-b from-white to-white/60 bg-clip-text text-transparent">
+            SOUNDCORE
+          </h1>
+          
+          <p className="text-xl text-zinc-400 max-w-md mx-auto mb-10 leading-relaxed">
+            Ultimate soundboard experience with global hotkeys and zero-latency injection.
+          </p>
+
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <button 
+              className="px-8 py-4 bg-white text-black font-bold rounded-2xl hover:scale-105 transition-all active:scale-95 shadow-[0_0_40px_rgba(255,255,255,0.2)]"
+              onClick={() => alert('Download link will be here soon!')}
+            >
+              Download for Windows
+            </button>
+            <button className="px-8 py-4 bg-white/5 border border-white/10 rounded-2xl font-bold hover:bg-white/10 transition-all">
+              Documentation
+            </button>
+          </div>
+
+          <div className="mt-20 pt-10 border-t border-white/5 flex gap-12 justify-center opacity-30 grayscale pointer-events-none">
+            <span className="font-bold text-2xl italic tracking-widest text-white">VITE</span>
+            <span className="font-bold text-2xl italic tracking-widest text-white">REACT</span>
+            <span className="font-bold text-2xl italic tracking-widest text-white">ELECTRON</span>
+          </div>
+        </div>
+
+        <div className="mt-auto pt-10 text-zinc-600 text-sm font-medium">
+          &copy; 2026 Soundcore. All rights reserved.
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div className="h-screen flex flex-col bg-background text-white select-none relative">
+    <div className="min-h-screen bg-[#0a0a0c] text-white p-4 font-sans selection:bg-purple-500/30">
       {/* Context Menu and Modals */}
       {contextMenu && <ContextMenu {...contextMenu} />}
       <AnimatePresence>

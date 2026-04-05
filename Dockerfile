@@ -1,32 +1,29 @@
-# ─── Stage 1: Build ───
-FROM node:22-alpine AS build
+# ─── Stage 1: Build Frontend ───
+FROM node:22-slim AS build
 
-# Указываем рабочую директорию
 WORKDIR /app
 
-# Копируем файлы зависимостей
+# Устанавливаем зависимости для сборки (если потребуются native модули, но для фронта обычно не нужны)
+# RUN apt-get update && apt-get install -y python3 make g++
+
 COPY package.json package-lock.json* ./
 
-# Устанавливаем зависимости
-# Используем --legacy-peer-deps если возникают конфликты версий
-RUN npm install --frozen-lockfile || npm install
+# Устанавливаем только необходимые зависимости для фронтенда
+RUN npm install --legacy-peer-deps
 
-# Копируем весь исходный код
 COPY . .
 
-# Собираем проект (electron-vite build соберет фронтенд в out/renderer)
-RUN npm run build
+# Собираем только фронтенд часть для веба
+# Используем vite напрямую, чтобы не дергать electron-builder
+RUN npx vite build src/renderer --outDir out/renderer
 
-# ─── Stage 2: Serve ───
+# ─── Stage 2: Serve with Nginx ───
 FROM nginx:stable-alpine
 
-# Копируем билд фронтенда из папки out/renderer в директорию nginx
+# Копируем билд фронтенда
 COPY --from=build /app/out/renderer /usr/share/nginx/html
 
-# Копируем дефолтный конфиг (если нужен специфический роутинг)
-# COPY deploy/nginx.conf /etc/nginx/conf.d/default.conf
-
-# Выставляем порт 80
+# Пробрасываем порт
 EXPOSE 80
 
 CMD ["nginx", "-g", "daemon off;"]
