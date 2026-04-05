@@ -20,8 +20,8 @@ RUN npx vite build src/renderer --outDir out/renderer
 # ─── Stage 2: Serve with Nginx ───
 FROM nginx:stable-alpine
 
-# Копируем билд фронтенда
-COPY --from=build /app/out/renderer /usr/share/nginx/html
+# Копируем билд фронтенда. Vite при сборке из src/renderer кладет файлы в src/renderer/dist или указанный outDir
+COPY --from=build /app/src/renderer/out/renderer /usr/share/nginx/html
 
 # Пробрасываем порт
 EXPOSE 80
