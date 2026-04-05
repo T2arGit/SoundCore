@@ -1,0 +1,36 @@
+
+# Локальная среда Агента
+.neira_runtime/
+brain/
+about_build.md
+*.tmp
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Node.js / Electron / Vite
+node_modules/
+dist/
+out/
+dist-ssr/
+.env.local
+*.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Build logs
+build_err.txt
+build_err_utf8.txt
+build_error.log
+build_error_utf8.log
+
+# Temp / scratch
+test_ps.js
+temp-app --template react-ts/

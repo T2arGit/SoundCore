@@ -1,0 +1,71 @@
+{
+  "name": "soundcore",
+  "version": "1.0.0",
+  "description": "A premium Soundcore client with no limits.",
+  "main": "./out/main/index.js",
+  "author": "Antigravity",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "preview": "electron-vite preview",
+    "pack": "npm run build && electron-builder --win --dir",
+    "dist": "npm run build && electron-builder --win"
+  },
+  "build": {
+    "npmRebuild": false,
+    "appId": "com.antigravity.soundcore",
+    "productName": "Soundcore",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "out/**/*",
+      "package.json",
+      "resources/**/*"
+    ],
+    "extraResources": [
+      "resources/driver/**/*"
+    ],
+    "asarUnpack": [
+      "**/*.node"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "resources/icon.png",
+      "requestedExecutionLevel": "requireAdministrator"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "artifactName": "${productName} Setup ${version}.${ext}"
+    }
+  },
+  "dependencies": {
+    "framer-motion": "latest",
+    "lucide-react": "latest",
+    "sudo-prompt": "^9.2.1",
+    "uiohook-napi": "^1.5.5"
+  },
+  "devDependencies": {
+    "@electron-toolkit/preload": "latest",
+    "@electron-toolkit/tsconfig": "^2.0.0",
+    "@electron-toolkit/utils": "latest",
+    "@tailwindcss/postcss": "^4.2.1",
+    "@tailwindcss/vite": "^4.2.1",
+    "@types/node": "latest",
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "@vitejs/plugin-react": "latest",
+    "autoprefixer": "^10.4.27",
+    "electron": "31.0.0",
+    "electron-builder": "^26.8.1",
+    "electron-vite": "latest",
+    "postcss": "^8.5.8",
+    "react": "latest",
+    "react-dom": "latest",
+    "tailwindcss": "^3.4.1",
+    "typescript": "latest",
+    "vite": "latest"
+  }
+}
